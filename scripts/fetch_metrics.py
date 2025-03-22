@@ -1,58 +1,39 @@
-import os
 import requests
 import pandas as pd
+import os
 from datetime import datetime
 
 PROMETHEUS_URL = "http://localhost:9090/api/v1/query"
 
-def fetch_metric(metric_query, metric_name):
-    """Fetch metrics from Prometheus with error handling."""
-    try:
-        response = requests.get(PROMETHEUS_URL, params={'query': metric_query}, timeout=5)
-        response.raise_for_status()  # Raise an error if request fails
-        data = response.json()
+# Define metrics to fetch
+METRICS = {
+    "cpu_usage": "container_cpu_usage_seconds_total",
+    "memory_usage": "container_memory_usage_bytes",
+    "disk_io": "node_disk_io_time_seconds_total",
+    "network_rx": "node_network_receive_bytes_total",
+    "network_tx": "node_network_transmit_bytes_total",
+}
 
-        if 'data' not in data or 'result' not in data['data']:
-            print(f"⚠️ No data found for {metric_name}")
-            return pd.DataFrame(columns=['timestamp', metric_name])  # Empty DataFrame
+SAVE_DIR = "../data"
+os.makedirs(SAVE_DIR, exist_ok=True)
 
-        results = []
-        for item in data['data']['result']:
-            try:
-                timestamp = datetime.utcfromtimestamp(float(item['value'][0])).strftime('%Y-%m-%d %H:%M:%S')
-                value = float(item['value'][1])
-                results.append({'timestamp': timestamp, metric_name: value})
-            except (ValueError, IndexError):
-                print(f"⚠️ Skipping invalid data point in {metric_name}: {item}")
+def fetch_metric(metric_name):
+    """Fetches a single metric from Prometheus and returns a DataFrame."""
+    response = requests.get(PROMETHEUS_URL, params={"query": metric_name})
+    data = response.json()
 
-        return pd.DataFrame(results)
+    results = []
+    for item in data.get("data", {}).get("result", []):
+        timestamp = datetime.utcfromtimestamp(float(item["value"][0])).strftime("%Y-%m-%d %H:%M:%S")
+        value = float(item["value"][1])
+        results.append({"timestamp": timestamp, "value": value})
 
-    except requests.exceptions.RequestException as e:
-        print(f"❌ Error fetching {metric_name}: {e}")
-        return pd.DataFrame(columns=['timestamp', metric_name])
+    return pd.DataFrame(results)
 
-# Ensure the 'data' directory exists
-output_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../data"))
-os.makedirs(output_dir, exist_ok=True)
-
-# Fetch Metrics with correct queries
-cpu_usage = fetch_metric('rate(container_cpu_usage_seconds_total[1m])', 'cpu_usage')  # CPU as rate
-memory_usage = fetch_metric('container_memory_usage_bytes', 'memory_usage')  # Memory in bytes
-
-# Convert Memory Usage to MB
-if not memory_usage.empty:
-    memory_usage['memory_usage'] = memory_usage['memory_usage'] / (1024 * 1024)  # Convert to MB
-
-# Save to CSV if data exists
-if not cpu_usage.empty:
-    cpu_usage.to_csv(os.path.join(output_dir, "cpu_usage.csv"), index=False)
-    print("✅ CPU usage saved to data/cpu_usage.csv")
-else:
-    print("⚠️ No CPU usage data to save.")
-
-if not memory_usage.empty:
-    memory_usage.to_csv(os.path.join(output_dir, "memory_usage.csv"), index=False)
-    print("✅ Memory usage saved to data/memory_usage.csv")
-else:
-    print("⚠️ No memory usage data to save.")
+# Fetch all metrics
+for metric_key, query in METRICS.items():
+    df = fetch_metric(query)
+    save_path = os.path.join(SAVE_DIR, f"{metric_key}.csv")
+    df.to_csv(save_path, index=False)
+    print(f"✅ {metric_key} data saved to {save_path}")
 
