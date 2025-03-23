@@ -3,7 +3,7 @@
 # Deployed Links and Presentation
 Check out our Project Report to know more about it-  
 GuideWire.pdf
-[Download Report PDF](https://github.com/CPPavithra/Kubernetes-Failure-Predictor/raw/main/GuideWire.pdf)
+[Download Report PDF](https://drive.google.com/file/d/1ksu7qUSHKJ_9u6-0rzK3GjMCT7YdZFJv/view?usp=sharing)
 Check out our video-
 [Our Video](https://drive.google.com/file/d/1z3-i6l6DKx3ORYUkF9Mn-4G3l8sQcJBR/view?usp=sharing)
 
