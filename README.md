@@ -1,6 +1,11 @@
 # Kubernetes Failure Prediction
 
 # Deployed Links and Presentation
+Check out our Project Report to know more about it-  
+GuideWire.pdf
+[Download Report PDF](https://github.com/CPPavithra/Kubernetes-Failure-Predictor/raw/main/GuideWire.pdf)
+Check out our video-
+[Our Video](https://drive.google.com/file/d/1z3-i6l6DKx3ORYUkF9Mn-4G3l8sQcJBR/view?usp=sharing)
 
 ## Index
 - [Project Overview](#project-overview)
