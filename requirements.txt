@@ -1,8 +1,19 @@
+# FastAPI and server
 fastapi
 uvicorn
-scikit-learn
+
+# Data handling
 pandas
 numpy
-matplotlib
-requests
+
+# Machine Learning
+scikit-learn
+xgboost
+joblib
+
+# Kubernetes interaction (Optional, if needed)
+kubernetes
+
+# For logging and debugging
+loguru
 

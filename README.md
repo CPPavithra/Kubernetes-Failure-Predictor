@@ -1,135 +1,120 @@
 # Kubernetes Failure Prediction
 
-## 📌 Project Overview
-This project predicts potential failures in Kubernetes clusters using machine learning. The model is trained to detect issues such as:
-- 🚨 **Node or pod failures**
-- 🖥 **Resource exhaustion** (CPU, memory, disk)
-- 🌐 **Network or connectivity issues**
-- ⚠️ **Service disruptions** based on logs and events
+# Deployed Links and Presentation
 
-The solution is packaged into a **FastAPI** service and deployed using **Docker** and **Kubernetes**.
-
----
-
-## 📂 Directory Structure
-```
-📦 k8s-failure-prediction
-├── 📁 data                      # Raw & processed data files
-│   ├── raw_metrics.csv          # Original collected metrics
-│   ├── processed_metrics.csv    # Preprocessed data for training
-│
-├── 📁 models                    # Trained machine learning models
-│   ├── failure_predictor.pkl    # Final trained model
-│
-├── 📁 scripts                   # Model training and evaluation scripts
-│   ├── train_model.py           # Script to train the ML model
-│   ├── evaluate_model.py        # Model evaluation script
-│
-├── 📁 app                       # API service
-│   ├── app.py                   # FastAPI service for predictions
-│   ├── Dockerfile               # Dockerfile for containerization
-│
-├── 📁 deployment                # Kubernetes deployment files
-│   ├── deployment.yaml          # Kubernetes deployment manifest
-│   ├── service.yaml             # Kubernetes service manifest
-│
-├── README.md                    # Documentation
-└── requirements.txt              # Python dependencies
-```
+## Index
+- [Project Overview](#project-overview)
+- [Directory Structure](#directory-structure)
+- [Installation and Setup](#installation-and-setup)
+  - [Prerequisites](#prerequisites)
+  - [Setup](#setup)
+- [Model Training](#model-training)
+- [API Endpoints](#api-endpoints)
+  - [POST /predict](#post-predict)
+- [Deployment on Render](#deployment-on-render)
+- [Submission Requirements](#submission-requirements)
 
 ---
 
-## 🚀 Setup & Installation
+## Project Overview
+This project aims to develop a machine learning model to predict failures in Kubernetes clusters based on given or simulated data. The trained model is exposed via a FastAPI service and deployed using Docker and Render.
 
-### 1️⃣ Install Dependencies
-Ensure you have Python 3.8+ installed. Then, install the required libraries:
-```bash
-pip install -r requirements.txt
+## Directory Structure
+```
+.
+├── models
+│   ├── k8s_failure_model.pkl      # Trained machine learning model
+├── scripts
+│   ├── train_model.py             # Script for training the model
+│   ├── test_model.py              # Script for testing the model
+├── app.py                         # FastAPI application
+├── Dockerfile                     # Docker configuration
+├── requirements.txt               # Python dependencies
+├── README.md                      # Project documentation
 ```
 
-### 2️⃣ Train the Model
-If needed, retrain the model using:
-```bash
+## Installation and Setup
+
+### Prerequisites
+- Python 3.8+
+- Docker
+- Render account
+
+### Setup
+1. Clone the repository:
+   ```sh
+   git clone https://github.com/your-repo/k8s-failure-prediction.git
+   cd k8s-failure-prediction
+   ```
+2. Install dependencies:
+   ```sh
+   pip install -r requirements.txt
+   ```
+3. Run the FastAPI service locally:
+   ```sh
+   uvicorn app:app --host 0.0.0.0 --port 8000
+   ```
+
+## Model Training
+To train the machine learning model, run:
+```sh
 python scripts/train_model.py
 ```
-The trained model will be saved in the `models/` directory.
+This script loads data, preprocesses it, and trains a classifier to predict Kubernetes failures.
 
-### 3️⃣ Run the API Locally
-```bash
-uvicorn app:app --host 0.0.0.0 --port 8000
-```
-Test the API using:
-```bash
-curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"cpu": 80, "memory": 90, "disk": 70}'
-```
+## API Endpoints
 
----
-
-## 🐳 Dockerization & Kubernetes Deployment
-
-### 🏗️ Build & Run with Docker
-1. **Build the Docker image**
-```bash
-docker build -t pavithra/k8s-failure-predictor:v1 .
+### POST /predict
+- **Endpoint:** `/predict`
+- **Method:** POST
+- **Request Body:**
+```json
+{
+    "cpu_usage": 0.5,
+    "memory_usage": 0.7,
+    "container_network_receive_bytes_total": 3000,
+    "container_network_transmit_bytes_total": 2500,
+    "container_fs_usage_bytes": 5000,
+    "cpu_usage_avg": 0.45,
+    "memory_usage_avg": 0.68,
+    "container_network_receive_bytes_total_avg": 2900,
+    "container_network_transmit_bytes_total_avg": 2400,
+    "container_fs_usage_bytes_avg": 4800,
+    "container_restart_count_avg": 2
+}
 ```
-2. **Run the container**
-```bash
-docker run -p 8000:8000 pavithra/k8s-failure-predictor:v1
-```
-3. **Push to Docker Hub**
-```bash
-docker push pavithra/k8s-failure-predictor:v1
-```
-
-### ☸️ Deploy to Kubernetes
-1. **Apply deployment and service manifests**
-```bash
-kubectl apply -f deployment/deployment.yaml
-kubectl apply -f deployment/service.yaml
-```
-2. **Check running pods**
-```bash
-kubectl get pods
-```
-3. **Expose the service**
-```bash
-kubectl port-forward service/k8s-failure-predictor 8000:8000
-```
-4. **Test the API**
-```bash
-curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"cpu": 85, "memory": 95, "disk": 80}'
+- **Response:**
+```json
+{
+    "failure_predicted": "YES"
+}
 ```
 
----
+## Deployment on Render
 
-## 📊 Model Performance
-### ✅ Accuracy Scores:
-- **Train Accuracy:** 86.80%
-- **Test Accuracy:** 68.88%
+1. Build and push the Docker image:
+   ```sh
+   docker build -t your-dockerhub-username/k8s-model:latest .
+   docker push your-dockerhub-username/k8s-model:latest
+   ```
+2. Go to [Render](https://render.com) and create a **new Web Service**.
+3. Select **Deploy from Docker** and provide the image name (`your-dockerhub-username/k8s-model:latest`).
+4. Set the port to `8000`.
+5. Click **Deploy**.
+6. Once deployed, test the API using:
+   ```sh
+   curl -X POST https://your-render-url.onrender.com/predict \
+   -H "Content-Type: application/json" \
+   -d '{ "cpu_usage": 0.5, "memory_usage": 0.7, ... }'
+   ```
 
-### 📉 Classification Report:
-| Class | Precision | Recall | F1-Score | Support |
-|-------|-----------|--------|----------|---------|
-| **0** (No Failure) | 0.82 | 0.64 | 0.72 | 904 |
-| **1** (Failure) | 0.56 | 0.77 | 0.65 | 542 |
+## Submission Requirements
 
-**Macro Avg:** 69% | **Weighted Avg:** 73%
+- **Model**: A trained machine learning model (`k8s_failure_model.pkl`).
+- **Codebase**: Functional code including data collection, model training, and evaluation scripts.
+- **Documentation**: Explanation of approach, metrics, and model performance.
+- **Presentation**: Recorded demo of the model's predictions and results.
+- **Test Data**: Sample data used for testing and validation.
 
----
-
-## 📌 Future Improvements
-✅ **Enhance Feature Engineering** – Incorporate more time-series trends 📈
-✅ **Optimize Hyperparameters** – Use Bayesian optimization 🔬
-✅ **Deploy on Cloud** – Host on AWS/GCP/Azure ☁️
-✅ **Improve Model Interpretability** – Use SHAP/LIME 📊
-
----
-
-## 🤝 Contributing
-Feel free to fork, contribute, and improve the model. PRs are welcome! 🎯
-
----
-
-## 🏆 Acknowledgments
-Thanks to the open-source community and Kubernetes practitioners for providing valuable datasets and insights!
+This project follows industry best practices and provides a scalable solution for Kubernetes failure prediction.
 
