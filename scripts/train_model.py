@@ -1,96 +1,109 @@
+import xgboost as xgb
 import pandas as pd
 import numpy as np
-import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
+import joblib
+from sklearn.model_selection import train_test_split, RandomizedSearchCV
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.impute import SimpleImputer
 from imblearn.over_sampling import SMOTE
-from xgboost import XGBClassifier
 
 # Load dataset
-data = pd.read_csv("data/merged_data.csv")
+data = pd.read_csv("/home/pavithra/k8s-failure-prediction/data/merged_data.csv")
 
-# Check if target column exists
-if "target" not in data.columns:
-    raise KeyError("❌ 'target' column not found in the dataset!")
+# Convert datetime columns to numeric timestamps
+for col in data.select_dtypes(include=['object', 'datetime']):
+    try:
+        data[col] = pd.to_datetime(data[col]).astype(int) / 10**9
+    except:
+        pass
 
-# Remove non-numeric columns and separate features/target
-X = data.drop(columns=["timestamp", "target"], errors="ignore")
+# Handle categorical features
+categorical_cols = data.select_dtypes(include=['object']).columns
+data[categorical_cols] = data[categorical_cols].apply(LabelEncoder().fit_transform)
+
+# Handle missing values
+imputer = SimpleImputer(strategy='mean')
+data.iloc[:, :] = imputer.fit_transform(data)
+
+# Split into features and target
+X = data.drop(columns=["target"])
 y = data["target"]
 
-# Standardize features
+# Handle Class Imbalance with SMOTE
+smote = SMOTE(sampling_strategy=0.6, random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X, y)
+
+# Feature Scaling
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_scaled = scaler.fit_transform(X_resampled)
 
-# Handle class imbalance using SMOTE
-smote = SMOTE(random_state=42)
-X_resampled, y_resampled = smote.fit_resample(X_scaled, y)
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y_resampled, test_size=0.2, random_state=42, stratify=y_resampled)
 
-# Split into train & test sets
-X_train, X_test, y_train, y_test = train_test_split(X_resampled, y_resampled, test_size=0.2, random_state=42)
+# Hyperparameter Tuning
 
-# Train model with class weighting
+param_grid = {
+    'n_estimators': [400, 500, 600],  # More trees to learn better
+    'max_depth': [10, 12, 15],        # Allow deeper trees
+    'learning_rate': [0.1, 0.2, 0.3], # Increase learning rate
+    'min_child_weight': [1, 2],       # Reduce constraints
+    'subsample': [0.9, 1.0],          # Use more data per tree
+    'colsample_bytree': [0.9, 1.0],   # Use more features per tree
+    'gamma': [0, 0.1],                # Reduce penalty on splits
+    'reg_lambda': [0, 1],             # Reduce L2 regularization
+    'reg_alpha': [0, 1],              # Reduce L1 regularization
+    'scale_pos_weight': [1]           # Balance class weights normally
+}
 
-model = XGBClassifier(
-    n_estimators=500,
-    max_depth=10,
-    learning_rate=0.01,
-    subsample=0.8,
-    colsample_bytree=0.8,
-    scale_pos_weight=1,
-    use_label_encoder=False,
-    eval_metric="logloss"
-)
 
-model.fit(X_train, y_train)
+xgb_model = xgb.XGBClassifier(objective='binary:logistic', eval_metric='logloss')
+
+search = RandomizedSearchCV(xgb_model, param_distributions=param_grid, n_iter=30, scoring='accuracy', cv=5, verbose=1, n_jobs=-1, random_state=42)
+search.fit(X_train, y_train)
+
+best_model = search.best_estimator_
 
 # Predictions
-y_pred = model.predict(X_test)
+y_train_pred = best_model.predict(X_train)
+y_test_pred = best_model.predict(X_test)
 
-# Evaluate model
-train_acc = model.score(X_train, y_train)
-test_acc = model.score(X_test, y_test)
-cv_acc = np.mean(cross_val_score(model, X_resampled, y_resampled, cv=5))
+# Accuracy Scores
+train_accuracy = accuracy_score(y_train, y_train_pred) * 100
+test_accuracy = accuracy_score(y_test, y_test_pred) * 100
 
-# Confusion matrix
-cm = confusion_matrix(y_test, y_pred)
+print(f"\n🔥 Train Accuracy: {train_accuracy:.2f}%")
+print(f"🔥 Test Accuracy: {test_accuracy:.2f}%")
 
-# Feature importance
-feature_importances = model.feature_importances_
-sorted_indices = np.argsort(feature_importances)[::-1]
-top_features = X.columns[sorted_indices]
+# Classification Report
+print("\n📊 Classification Report:")
+print(classification_report(y_test, y_test_pred))
 
-# Print results
-print("\n📊 MODEL PERFORMANCE METRICS")
-print("────────────────────────────────")
-print(f"🏋️ Training Accuracy: {train_acc:.4f}")
-print(f"🛠️ Test Accuracy: {test_acc:.4f}")
-print(f"🎯 Cross-Validation Accuracy: {cv_acc:.4f}")
+joblib.dump(best_model, "k8s_failure_model.pkl")
+print("\nMODEL SAVED\n")
 
-# Print classification report
-print("\n📜 Classification Report:\n", classification_report(y_test, y_pred))
-
-# Print confusion matrix
-print("\n🖼️ Confusion Matrix:")
-print(cm)
-
-# Show top features
-print("\n🔍 Top 5 Most Important Features:")
-for i in range(min(5, len(top_features))):
-    print(f"   {i+1}. {top_features[i]} ({feature_importances[sorted_indices[i]]:.4f})")
-
-# Save trained model
-joblib.dump(model, "models/failure_predictor.pkl")
-print("\n✅ Model saved successfully!")
-
-# Plot confusion matrix
-plt.figure(figsize=(6, 5))
-sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["No Failure", "Failure"], yticklabels=["No Failure", "Failure"])
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_test_pred)
+plt.figure(figsize=(6, 4))
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Class 0', 'Class 1'], yticklabels=['Class 0', 'Class 1'])
 plt.xlabel("Predicted")
 plt.ylabel("Actual")
 plt.title("Confusion Matrix")
+plt.show()
+
+# Feature Importance Graph
+feature_importances = best_model.feature_importances_
+features = data.drop(columns=["target"]).columns
+
+# Sort feature importances
+sorted_idx = np.argsort(feature_importances)[::-1]
+
+plt.figure(figsize=(10, 5))
+sns.barplot(x=feature_importances[sorted_idx][:10], y=[features[i] for i in sorted_idx[:10]], palette="coolwarm")
+plt.xlabel("Feature Importance Score")
+plt.ylabel("Top 10 Features")
+plt.title("Feature Importance (Top 10)")
 plt.show()
 
