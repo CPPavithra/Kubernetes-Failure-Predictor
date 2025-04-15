@@ -8,10 +8,11 @@ import requests
 from jsonextractor import solution_implementation  # import your fix script
 from kubernetes import client, config
 import re
+from dotenv import load_dotenv
 
 
 # Constants
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 MODEL_PATH = "../models/k8s_failure_model_live.pkl"
 CSV_PATH = "/home/pavithra/k8s-failure-prediction/data/k8s_live_metrics.csv"
