@@ -9,7 +9,7 @@ import subprocess
 import csv
 
 # Constants
-PROMETHEUS_URL = "http://localhost:9090/api/v1/query"
+PROMETHEUS_URL = "http://192.168.49.2:32745/api/v1/query"
 SAVE_DIR = os.path.join(os.path.dirname(__file__), "../data")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
