@@ -1,228 +1,186 @@
-# Project Name: **AI-Driven Failure Prediction and Analysis System for Kubernetes**
 
-## Overview
 
-This project focuses on **predicting** and **analyzing** failures in Kubernetes clusters using **AI/ML models**. The solution aims to predict potential pod/node failures, resource exhaustion, and network issues based on historical and real-time cluster metrics fetched from **Prometheus**.
+```markdown
+# Kubernetes Failure Prediction
 
-Key features include:
-- **Data collection**: Historical and real-time metrics are collected from the Kubernetes clusters using Prometheus.
-- **Machine Learning Model**: A model is trained to predict failures in the clusters.
-- **Evaluation**: The model is evaluated using various metrics to ensure accuracy and reliability.
-- **Deployment**: The trained model can be deployed in Kubernetes for real-time prediction.
-- **Visualization and Reporting**: Presenting predictions and failure analysis through dashboards and reports.
+This project aims to build a machine learning model for predicting Kubernetes cluster failures using real-time and historical cluster metrics. The goal is to identify potential issues in a Kubernetes environment, such as pod/node failures, resource exhaustion, and network issues, before they occur. 
 
----
+The system leverages a variety of tools and libraries, including Prometheus for metrics collection, Python for data processing, and machine learning algorithms to predict failures.
 
 ## Table of Contents
-1. [Installation](#installation)
-2. [Project Structure](#project-structure)
-3. [Model Training](#model-training)
-4. [Data Collection](#data-collection)
-5. [Fetching Live Prometheus Metrics](#fetching-live-prometheus-metrics)
-6. [Model Evaluation](#model-evaluation)
-7. [Prediction](#prediction)
-8. [Deployment](#deployment)
-9. [Usage](#usage)
-10. [Contributing](#contributing)
-11. [License](#license)
 
----
+- [Project Overview](#project-overview)
+- [System Requirements](#system-requirements)
+- [Project Structure](#project-structure)
+- [Setup Instructions](#setup-instructions)
+- [Usage](#usage)
+- [Model Evaluation](#model-evaluation)
+- [Deployment](#deployment)
+- [Testing](#testing)
+- [Licenses](#licenses)
 
-## Installation
+## Project Overview
 
-### Prerequisites
-- **Python 3.8+** 
-- **Kubernetes Cluster** (for deployment)
-- **Git** (to clone the repository)
-- **Prometheus** (for fetching real-time metrics)
+Kubernetes clusters can face a variety of issues, from pod/node failures to resource exhaustion or network issues. Predicting these failures in advance can help maintain a more stable and efficient cluster. This project includes:
 
-### Setup
+1. Data collection from Kubernetes clusters.
+2. Feature engineering to prepare metrics for machine learning.
+3. Training of a machine learning model to predict failures.
+4. Deployment of the model in a Kubernetes environment.
+5. Evaluation and visualization of the model's performance.
 
-1. **Clone the repository:**
+## System Requirements
 
-```bash
-git clone https://github.com/yourusername/kubernetes-failure-prediction.git
-cd kubernetes-failure-prediction
-```
-
-2. **Create a virtual environment (optional but recommended):**
-
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. **Install dependencies:**
-
-```bash
-pip install -r requirements.txt
-```
-
-### Kubernetes Setup (for deployment)
-Follow the instructions in the `deployment/README.md` file to deploy the model into a Kubernetes cluster for real-time prediction.
-
----
+- **Python 3.7+**
+- **Prometheus** (for fetching live Kubernetes metrics)
+- **Docker** (for containerizing the application)
+- **Kubernetes** (for deployment)
+- **Machine Learning Libraries**: `scikit-learn`, `pandas`, `numpy`, `matplotlib`, `joblib`, etc.
 
 ## Project Structure
 
 ```plaintext
 kubernetes-failure-prediction/
-├── data_collection/             # Scripts for collecting data from Kubernetes clusters
-│   ├── collect_metrics.py      # Collects metrics from cluster (if applicable)
-│   └── preprocess_data.py      # Prepares data for training
-├── models/                      # Trained machine learning models
-│   ├── failure_predictor.pkl   # Final trained model for failure prediction
-├── scripts/                     # Main scripts
-│   ├── trainmodel1.py           # Script for training the model
+├── src/                         # Code for data collection, model training, and evaluation
+│   ├── deployment.yaml          # Kubernetes deployment configuration
+│   ├── generate_output.py       # Generates model output for analysis
+│   ├── __pycache__/             # Compiled Python files
+│   ├── feature_engineering.py   # Script for feature engineering
+│   ├── jsonextractor.py         # Extracts JSON data for processing
+│   ├── test_model.py            # Tests for evaluating model performance
 │   ├── fetch_live_metrics.py    # Fetches live metrics from Prometheus
 │   ├── predictgemini.py         # Model prediction script
-│   └── data_analysis.py         # Data analysis and visualization script
-├── deployment/                  # Files for deploying the model to Kubernetes
-│   ├── kubernetes_deploy.yaml   # Kubernetes deployment configuration
-│   └── Dockerfile               # Dockerfile for containerizing the model
-├── tests/                       # Unit and integration tests
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
+│   └── train_model_live.py      # Training script for live model training
+├── models/                       # Trained machine learning models
+│   ├── failure_predictor.pkl     # Final trained model for failure prediction
+├── data/                         # Test data or external links to datasets
+│   ├── test_data.csv             # Example dataset used for testing
+│   └── external_data_link.txt    # External link to large datasets
+├── docs/                         # Documentation files
+│   └── README.md                 # This file
+├── presentation/                 # Slides and recorded demo (YouTube/Drive link)
+│   ├── slides.pptx               # Slides for the presentation
+│   └── demo_link.txt             # Link to recorded demo (YouTube/Google Drive)
+├── deployment/                   # Files for deploying the model to Kubernetes
+│   ├── kubernetes_deploy.yaml    # Kubernetes deployment configuration
+│   └── Dockerfile                # Dockerfile for containerizing the model
+├── tests/                        # Unit and integration tests
+├── requirements.txt              # Python dependencies
+└── LICENSE                       # License information
 ```
 
----
+## Setup Instructions
 
-## Model Training
-
-1. **Data Preparation:**
-   - Gather data from Kubernetes clusters (e.g., pod status, node status, resource usage metrics).
-   - Use `collect_metrics.py` (if applicable) to collect and preprocess the data.
-
-2. **Training the Model:**
-   - Ensure your data is clean and formatted correctly.
-   - Use `trainmodel1.py` to train the machine learning model. This script will take the preprocessed data and train the model.
-   - The trained model will be saved as `failure_predictor.pkl`.
-
-3. **Model Evaluation:**
-   - Evaluate the model using accuracy, precision, recall, and F1-score.
-   - You can use `evaluate_model.py` to evaluate the model and visualize the results.
-
----
-
-## Data Collection
-
-This project collects data from Kubernetes clusters using **Prometheus**. You can use `fetch_live_metrics.py` to fetch real-time metrics such as:
-
-- Pod status
-- Node status
-- Resource usage (CPU, memory, disk, etc.)
-- Network traffic and latency
-- Error logs and system events
-
-These metrics are then used for training the model and making predictions about potential failures.
-
----
-
-## Fetching Live Prometheus Metrics
-
-To fetch live metrics from your Kubernetes cluster using Prometheus, use the script:
+### 1. Clone the repository
 
 ```bash
-python scripts/fetch_live_metrics.py
+git clone https://github.com/your-username/kubernetes-failure-prediction.git
+cd kubernetes-failure-prediction
 ```
 
-This script connects to Prometheus and retrieves real-time metrics from the Kubernetes cluster. The data fetched will be used as input to the trained model for making real-time failure predictions.
-
----
-
-## Model Evaluation
-
-After training, the model is evaluated based on its ability to predict failures in the Kubernetes clusters. The following metrics are used to evaluate the model's performance:
-
-- **Accuracy**: Percentage of correct predictions.
-- **Precision**: Proportion of positive predictions that are actually correct.
-- **Recall**: Proportion of actual positive cases that are correctly identified.
-- **F1-Score**: The harmonic mean of precision and recall.
-
-These metrics help in determining the model’s reliability for failure prediction.
-
----
-
-## Prediction
-
-After training the model and collecting live metrics, you can use the script `predictgemini.py` to make predictions. The model will assess the live metrics and predict potential failures within the Kubernetes cluster.
-
-To make predictions:
+### 2. Create a virtual environment
 
 ```bash
-python scripts/predictgemini.py
+python3 -m venv venv
+source venv/bin/activate  # On Windows, use venv\Scripts\activate
 ```
 
-This script will load the trained model (`failure_predictor.pkl`), fetch the live metrics using Prometheus, and output predictions on the potential failures in your cluster.
+### 3. Install dependencies
 
----
+```bash
+pip install -r requirements.txt
+```
 
-## Deployment
+### 4. Set up Prometheus
 
-For deploying the trained model into a Kubernetes environment, follow these steps:
-
-1. **Dockerize the model**:
-   - Use the `Dockerfile` to create a Docker container for the model.
-
-2. **Kubernetes Deployment**:
-   - Use the `kubernetes_deploy.yaml` file to deploy the model into the cluster.
-
-3. **Real-time Prediction**:
-   - The model will be deployed to make real-time predictions about potential failures based on live cluster data.
-
-For more detailed instructions, refer to the `deployment/README.md` file.
-
----
+Ensure that you have Prometheus running and that it's scraping Kubernetes metrics. You can set up Prometheus as per [Kubernetes documentation](https://prometheus.io/docs/prometheus/latest/getting_started/).
 
 ## Usage
 
-### Running the Model Locally
+### 1. Collect Metrics
 
-1. **Train the model:**
-   Run the following script to train the model:
+You can collect Kubernetes metrics by running:
 
-   ```bash
-   python scripts/trainmodel1.py
-   ```
+```bash
+python src/fetch_live_metrics.py
+```
 
-2. **Fetch live metrics from Prometheus:**
-   To fetch real-time metrics from Prometheus:
+This will fetch live metrics from your Prometheus instance.
 
-   ```bash
-   python scripts/fetch_live_metrics.py
-   ```
+### 2. Train the Model
 
-3. **Make predictions:**
-   To run predictions using the trained model:
+To train the model on your dataset, use the following command:
 
-   ```bash
-   python scripts/predictgemini.py
-   ```
+```bash
+python src/train_model_live.py
+```
 
-4. **Data Analysis:**
-   To perform data analysis and visualize the collected metrics:
+This will train the model on the collected data and output the trained model as `failure_predictor.pkl` in the `models/` directory.
 
-   ```bash
-   python scripts/data_analysis.py
-   ```
+### 3. Predict Failures
 
----
+Once the model is trained, you can use it to predict failures in your Kubernetes cluster:
 
-## Contributing
+```bash
+python src/predictgemini.py
+```
 
-We welcome contributions! If you'd like to contribute to this project, please follow these steps:
+This script will load the trained model and predict potential failures based on real-time metrics.
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes.
-4. Commit your changes (`git commit -am 'Add new feature'`).
-5. Push to the branch (`git push origin feature-branch`).
-6. Create a new pull request.
+## Model Evaluation
 
----
+To evaluate the model's performance, use the following script:
 
-## License
+```bash
+python src/test_model.py
+```
+
+This will test the model on a test dataset and display evaluation metrics such as accuracy, precision, recall, and F1 score.
+
+## Deployment
+
+### 1. Dockerize the Application
+
+Use the Dockerfile to containerize the application:
+
+```bash
+docker build -t k8s-failure-prediction .
+```
+
+### 2. Deploy to Kubernetes
+
+You can deploy the model using the Kubernetes configuration in `deployment.yaml`:
+
+```bash
+kubectl apply -f deployment.yaml
+```
+
+This will deploy your model to a Kubernetes cluster. Make sure that your cluster has access to the necessary metrics from Prometheus.
+
+## Testing
+
+Unit and integration tests are located in the `tests/` directory. To run the tests, use:
+
+```bash
+pytest tests/
+```
+
+This will run all the unit and integration tests to ensure the code is working as expected.
+
+## Licenses
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
+
+## Acknowledgments
+
+- [Prometheus](https://prometheus.io/) for real-time metrics collection.
+- [scikit-learn](https://scikit-learn.org/stable/) for machine learning algorithms.
+- [Kubernetes](https://kubernetes.io/) for orchestration and deployment.
+
+Feel free to contribute to the project or suggest improvements via issues and pull requests. Happy coding!
+
+```
+
+Let me know if you need any adjustments!
