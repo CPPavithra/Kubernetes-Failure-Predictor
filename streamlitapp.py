@@ -154,7 +154,7 @@ def train_model():
         return
     st.session_state.model_trained = False
     with st.spinner("Training model..."):
-        subprocess.run(["python3", "src/train_model_live.py"], check=True)
+        subprocess.run(["python3", "scripts/train_model_live.py"], check=True)
         st.session_state.model_trained = True
     st.success("Model trained successfully!")
 
@@ -193,7 +193,7 @@ def run_prediction():
     try:
         with st.spinner("Running prediction..."):
             # Run the prediction script with a timeout of 10 seconds
-            subprocess.run(["python3", "src/predictgemini.py"], check=True, timeout=10)
+            subprocess.run(["python3", "scripts/predictgemini.py"], check=True, timeout=10)
         st.session_state.prediction_done = True
         st.success("Prediction complete!")
     except subprocess.TimeoutExpired:
