@@ -5,7 +5,8 @@ from datetime import datetime, timezone
 import schedule
 import time
 
-PROMETHEUS_URL = "http://localhost:9090/api/v1/query"  # Update if needed
+#PROMETHEUS_URL = "http://localhost:9090/api/v1/query"  # Update if needed
+PROMETHEUS_URL = "http://192.168.49.2:32745/api/v1/query"
 
 METRICS = {
     "cpu_usage": 'rate(container_cpu_usage_seconds_total[1m])',
