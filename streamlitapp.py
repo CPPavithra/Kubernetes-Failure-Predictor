@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 import threading
 import time
 import subprocess
-import csv
 
 # Constants
 PROMETHEUS_URL = "http://192.168.49.2:32745/api/v1/query"
+
 SAVE_DIR = os.path.join(os.path.dirname(__file__), "../data")
 os.makedirs(SAVE_DIR, exist_ok=True)
 
@@ -114,15 +114,38 @@ def start_metrics_fetching():
             fetch_and_save_metrics()
         time.sleep(300)  # Fetch every 5 minutes
 
-# Start metrics fetching in a background thread
+# Thread to prompt the user to train the model every 30 seconds
+def prompt_train_model():
+    while True:
+        time.sleep(30)  # Prompt every 30 seconds
+        if not st.session_state.model_trained:
+            st.info("⏳ It's time to train the model. Please click 'Train Model'.")
+
+# Start background threads for fetching metrics and prompting to train the model
 if "metrics_thread" not in st.session_state:
     st.session_state.metrics_thread = threading.Thread(target=start_metrics_fetching, daemon=True)
     st.session_state.metrics_thread.start()
 
-# Button to manually fetch metrics
+if "train_model_thread" not in st.session_state:
+    st.session_state.train_model_thread = threading.Thread(target=prompt_train_model, daemon=True)
+    st.session_state.train_model_thread.start()
+
+# Manually fetch metrics button
 if st.button("🔄 Fetch Live Metrics"):
     if not st.session_state.metrics_in_progress:
         fetch_and_save_metrics()
+
+# Function to update metrics CSV in real-time every 1 second
+def update_metrics_csv():
+    while True:
+        if st.session_state.metrics_fetched and not st.session_state.metrics_in_progress:
+            fetch_and_save_metrics()  # Fetch new metrics and save
+        time.sleep(1)  # Update every 1 second
+
+# Start the thread for real-time updates to CSV
+if "metrics_update_thread" not in st.session_state:
+    st.session_state.metrics_update_thread = threading.Thread(target=update_metrics_csv, daemon=True)
+    st.session_state.metrics_update_thread.start()
 
 # Train the model
 def train_model():
@@ -162,36 +185,23 @@ def visualize_output():
 if st.button("📊 Visualize Output") and st.session_state.model_trained:
     visualize_output()
 
-# Prediction logic with continuous update to CSV
+# Prediction logic with timeout handling
 def run_prediction():
     if not st.session_state.model_trained:
         st.error("Please train the model first.")
         return
     try:
         with st.spinner("Running prediction..."):
-            # Create or open the CSV file for appending prediction data
-            output_path = os.path.join(SAVE_DIR, "predictions_output.csv")
-            header_written = False
-
-            for _ in range(10):  # Run prediction for 10 iterations (1 second intervals)
-                prediction_result = f"Sample {_+1}: {'✅ No Failure' if _ % 2 == 0 else '❌ Failure'}"
-                prediction_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
-                # Append prediction to CSV
-                with open(output_path, 'a', newline='') as f:
-                    writer = csv.writer(f)
-                    if not header_written:
-                        writer.writerow(['timestamp', 'prediction_result'])
-                        header_written = True
-                    writer.writerow([prediction_timestamp, prediction_result])
-                
-                time.sleep(1)  # Wait 1 second between updates
-
+            # Run the prediction script with a timeout of 10 seconds
+            subprocess.run(["python3", "scripts/predictgemini.py"], check=True, timeout=10)
         st.session_state.prediction_done = True
         st.success("Prediction complete!")
-    except Exception as e:
+    except subprocess.TimeoutExpired:
+        st.warning("Prediction timed out after 10 seconds.")
+        # Optional: You can handle timeout scenarios here if needed
+    except subprocess.CalledProcessError as e:
         st.error(f"Error during prediction: {e}")
-
+    
     # Display output after prediction
     visualize_output()
 
