@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from datetime import datetime, timezone
 
-PROMETHEUS_URL = "http://localhost:9090/api/v1/query"
+PROMETHEUS_URL = "http://prometheus-kube-prometheus-prometheus.default.svc.cluster.local:9090/api/v1/query"
 
 METRICS = {
     "cpu_usage": "container_cpu_usage_seconds_total",
