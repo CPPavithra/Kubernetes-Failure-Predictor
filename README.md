@@ -1,6 +1,29 @@
 
 
 ```markdown
+
+# DEPLOYMENTS AND HOW TO USE IT (PLEASE READ)
+[!]https://docs.google.com/document/d/1R6nR_AweptKE9sJPMdnFxIeO3jDxQfkfBhI2Ld4GCDc/edit?usp=sharing
+[!]https://kubernetes-failure-chatbot.vercel.app/
+[!]https://docs.google.com/presentation/d/1fE-f3UlMdvPvwsPu7tjNVFxIesq9U5uNW-DJhCRIQb4/edit?usp=sharing
+[!]
+
+
+(PLEASE NOTE- The data is being scraped from prometheus EVERY 5 MINUTES. Model will be best trained with time.)
+
+The vercel app is for the frontend (additional feature) and does not really come under the model training and gemini output.
+We used prometheus in kubernetes using minikube to scrape the data. We tried to make it a public IP but due to security constraints and few free tier cloud options, we decided to keep it local.
+If needed, you can run it on your own prometheus and dataset (through src/fetch_live_metrics and data/k8s_live_metrics.csv)
+The model is under models/k8s_failure_model_live.pkl
+This has been deployed online. 
+The gemini output and remediation step is under src/predictgemini.py src/jsonextractor.py .(predictgeministreamlit.py was for testing to integrate with streamlit)
+ALL OF THIS BEAUTIFULLY COMES TOGETHER IN 
+streamlitapp.py in the root directory 
+
+(PLEASE NOTE- IT WORKS WITH LOCAL IP, WE COULD NOT RUN PROMETHEUS GLOBALLY AS MENTIONED. BUT PLEASE TRY IT OUT. HENCE THE FETCH METRICS IS WITH THE CURRENT SMALL AMOUNT OF DATA)
+
+Read below to know more about our project.
+
 # Kubernetes Failure Prediction
 
 This project aims to build a machine learning model for predicting Kubernetes cluster failures using real-time and historical cluster metrics. The goal is to identify potential issues in a Kubernetes environment, such as pod/node failures, resource exhaustion, and network issues, before they occur. 
