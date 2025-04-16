@@ -1,7 +1,4 @@
 
-
-```markdown
-
 # DEPLOYMENTS AND HOW TO USE IT (PLEASE READ)
 [!]https://docs.google.com/document/d/1R6nR_AweptKE9sJPMdnFxIeO3jDxQfkfBhI2Ld4GCDc/edit?usp=sharing
 [!]https://kubernetes-failure-chatbot.vercel.app/
