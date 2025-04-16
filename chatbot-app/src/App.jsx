@@ -16,7 +16,7 @@ function App() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/k8s-chat", {
+      const response = await fetch("https://kubernetes-failure-predictor.onrender.com/k8s-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userQuery: query }),
