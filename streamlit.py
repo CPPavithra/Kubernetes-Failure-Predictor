@@ -1,10 +1,15 @@
 import streamlit as st
 import pandas as pd
+import json
+import sys
 import os
 from datetime import datetime
 import threading
 import time
 import subprocess
+sys.path.append(os.path.abspath('./src'))
+from jsonextractor import solution_implementation
+from predictgeministreamlit import run_predictions
 
 # Constants
 CSV_PATH = os.path.join(os.path.dirname(__file__), "../data/k8s_live_metrics.csv")
@@ -111,6 +116,7 @@ if st.button("📊 Visualize Output") and st.session_state.model_trained:
     visualize_output()
 
 # Prediction logic with timeout handling
+# Prediction logic with timeout handling
 def run_prediction():
     if not st.session_state.model_trained:
         st.error("Please train the model first.")
@@ -118,15 +124,34 @@ def run_prediction():
     try:
         with st.spinner("Running prediction..."):
             # Run the prediction script with a timeout of 10 seconds
-            subprocess.run(["python3", "src/predictgemini.py"], check=True, timeout=10)
-        st.session_state.prediction_done = True
-        st.success("Prediction complete!")
+            result = subprocess.run(["python3", "src/predictgeministreamlit.py"], capture_output=True, text=True, timeout=10)
+            
+            # Check if the subprocess ran successfully
+            if result.returncode == 0:
+                # Display the output from the script
+                st.session_state.prediction_done = True
+                st.success("Prediction complete!")
+                st.markdown("### Prediction Output:")
+                st.text(result.stdout)  # Displaying the script's output
+
+                # Parse and display structured output if needed
+                try:
+                    # You can also parse the stdout into a Python object if necessary
+                    output_data = result.stdout
+                    # Assuming the output is in JSON format (you can modify as per the actual output format)
+                    parsed_output = json.loads(output_data)
+                    st.json(parsed_output)  # Displaying structured data if the output is JSON
+                except json.JSONDecodeError:
+                    st.warning("Unable to parse prediction output as JSON.")
+
+            else:
+                st.error(f"❌ Error during prediction: {result.stderr}")
+
     except subprocess.TimeoutExpired:
         st.warning("Prediction timed out after 10 seconds.")
-        # Optional: You can handle timeout scenarios here if needed
     except subprocess.CalledProcessError as e:
         st.error(f"Error during prediction: {e}")
-    
+
     # Display output after prediction
     visualize_output()
 
@@ -138,4 +163,3 @@ if st.button("🚀 Run Prediction") and st.session_state.model_trained:
 st.markdown(f"Metrics fetched: {'Yes' if st.session_state.metrics_fetched else 'No'}")
 st.markdown(f"Model trained: {'Yes' if st.session_state.model_trained else 'No'}")
 st.markdown(f"Prediction completed: {'Yes' if st.session_state.prediction_done else 'No'}")
-
