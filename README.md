@@ -8,10 +8,6 @@
 
 [!]https://docs.google.com/presentation/d/1fE-f3UlMdvPvwsPu7tjNVFxIesq9U5uNW-DJhCRIQb4/edit?usp=sharing
 
-
-[!]
-
-
 (PLEASE NOTE- The data is being scraped from prometheus EVERY 5 MINUTES. Model will be best trained with time.)
 
 The vercel app is for the frontend (additional feature) and does not really come under the model training and gemini output.
@@ -209,4 +205,4 @@ Feel free to contribute to the project or suggest improvements via issues and pu
 
 ```
 
-Let me know if you need any adjustments!
+
