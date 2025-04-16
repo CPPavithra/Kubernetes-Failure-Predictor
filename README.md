@@ -1,8 +1,14 @@
 
 # DEPLOYMENTS AND HOW TO USE IT (PLEASE READ)
 [!]https://docs.google.com/document/d/1R6nR_AweptKE9sJPMdnFxIeO3jDxQfkfBhI2Ld4GCDc/edit?usp=sharing
+
+
 [!]https://kubernetes-failure-chatbot.vercel.app/
+
+
 [!]https://docs.google.com/presentation/d/1fE-f3UlMdvPvwsPu7tjNVFxIesq9U5uNW-DJhCRIQb4/edit?usp=sharing
+
+
 [!]
 
 
