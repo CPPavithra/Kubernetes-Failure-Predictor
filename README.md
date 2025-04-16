@@ -8,6 +8,10 @@
 
 [!]https://docs.google.com/presentation/d/1fE-f3UlMdvPvwsPu7tjNVFxIesq9U5uNW-DJhCRIQb4/edit?usp=sharing
 
+
+[!]https://youtu.be/RrEi8nHrtek
+
+
 (PLEASE NOTE- The data is being scraped from prometheus EVERY 5 MINUTES. Model will be best trained with time.)
 
 The vercel app is for the frontend (additional feature) and does not really come under the model training and gemini output.
@@ -70,10 +74,6 @@ kubernetes-failure-prediction/
 │   ├── feature_engineering.py   # Script for feature engineering
 │   ├── jsonextractor.py         # Extracts JSON data for processing
 │   ├── test_model.py            # Tests for evaluating model performance
-│   ├── fetch_live_metrics.py    # Fetches live metrics from Prometheus
-│   ├── predictgemini.py         # Model prediction script
-│   └── train_model_live.py      # Training script for live model training
-├── models/                       # Trained machine learning models
 │   ├── failure_predictor.pkl     # Final trained model for failure prediction
 ├── data/                         # Test data or external links to datasets
 │   ├── test_data.csv             # Example dataset used for testing
@@ -191,6 +191,10 @@ This will run all the unit and integration tests to ensure the code is working a
 
 ## Licenses
 
+This will run all the unit and integration tests to ensure the code is working as expected.
+
+## Licenses
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
@@ -205,4 +209,4 @@ Feel free to contribute to the project or suggest improvements via issues and pu
 
 ```
 
-
+Let me know if you need any adjustments!
