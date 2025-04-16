@@ -9,7 +9,7 @@ function App() {
   const handleSend = async () => {
     if (!input.trim()) return;
     setLoading(true);
-    const res = await fetch('http://localhost:5000/k8s-chat', {
+    const res = await fetch('https://kubernetes-failure-predictor.onrender.com', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userQuery: input })

@@ -30,10 +30,10 @@ def get_first_pod_name_from_deployment(deployment_name, namespace):
             print(f"Found pod name: {pod_name}")  # Add logging to confirm pod found
             return pod_name
         else:
-            print(f"⚠️ No pods found for deployment '{deployment_name}' in namespace '{namespace}'")
+            print(f"No pods found for deployment '{deployment_name}' in namespace '{namespace}'")
             return None
     except ApiException as e:
-        print(f"❌ Error fetching pods for deployment: {e}")
+        print(f" Error fetching pods for deployment: {e}")
         return None
 
 
@@ -43,13 +43,13 @@ def generate_patch_from_pod_json(pod_json, memory_request=None, memory_limit=Non
             pod_json = v1.read_namespaced_pod(pod_name, namespace).to_dict()
         except ApiException as e:
             if e.status == 404:
-                print(f"❌ Pod '{pod_name}' not found in namespace '{namespace}'. Cannot proceed.")
+                print(f" Pod '{pod_name}' not found in namespace '{namespace}'. Cannot proceed.")
                 return None
             else:
                 raise
 
     if not pod_json or 'spec' not in pod_json or 'containers' not in pod_json['spec']:
-        raise ValueError("❌ Invalid or missing pod JSON data.")
+        raise ValueError("Invalid or missing pod JSON data.")
 
     containers = pod_json['spec']['containers']
     patch_containers = []
@@ -94,14 +94,14 @@ def generate_patch_from_pod_json(pod_json, memory_request=None, memory_limit=Non
 
 def diagnose_and_fix_pod(deployment_name, namespace, patch_body):
     if patch_body is None:
-        print("❌ Patch body is missing. Cannot proceed.")
+        print("Patch body is missing. Cannot proceed.")
         return
 
     try:
         apps_v1.patch_namespaced_deployment(deployment_name, namespace, patch_body)
         print("✅ Patched deployment with updated resource settings.")
     except ApiException as e:
-        print(f"❌ Failed to patch deployment: {e}")
+        print(f"Failed to patch deployment: {e}")
 
 def fix_image_pull_error(json_input):
     name = json_input['deployment_name']
@@ -130,7 +130,7 @@ def fix_image_pull_error(json_input):
         apps_v1.patch_namespaced_deployment(name=name, namespace=namespace, body=patch_body)
         print("✅ Fixed image pull error by updating image and secrets.")
     except ApiException as e:
-        print(f"❌ Failed to patch image or secrets: {e}")
+        print(f" Failed to patch image or secrets: {e}")
 
 
 def scale_deployment(deployment_name, namespace, replicas):
@@ -139,7 +139,7 @@ def scale_deployment(deployment_name, namespace, replicas):
         apps_v1.patch_namespaced_deployment_scale(deployment_name, namespace, scale)
         print(f"✅ Scaled deployment {deployment_name} to {replicas} replicas.")
     except ApiException as e:
-        print(f"❌ Failed to scale deployment: {e}")
+        print(f"Failed to scale deployment: {e}")
 
 
 def delete_pod(pod_name, namespace):
@@ -147,7 +147,7 @@ def delete_pod(pod_name, namespace):
         v1.delete_namespaced_pod(name=pod_name, namespace=namespace)
         print(f"♻️ Deleted pod {pod_name} for restart.")
     except ApiException as e:
-        print(f"❌ Failed to delete pod: {e}")
+        print(f"Failed to delete pod: {e}")
 
 
 # 🔍 Natural Language Matcher
@@ -201,7 +201,7 @@ def solution_implementation(solution_steps, deployment_name, namespace, pod_name
                 print("🔍 Recent logs:")
                 print(logs)
             except ApiException as e:
-                print(f"❌ Could not fetch logs: {e}")
+                print(f"Could not fetch logs: {e}")
 
         elif action == "restart_container":
             delete_pod(pod_name, namespace)
@@ -211,7 +211,7 @@ def solution_implementation(solution_steps, deployment_name, namespace, pod_name
         elif action == "increase_memory_limits":
 
 
-            print("📈 Increasing memory limits for deployment...")
+            print("Increasing memory limits for deployment...")
             patch_body = generate_patch_from_pod_json(
                 pod_json, 
                 memory_request="512Mi", 
@@ -227,28 +227,28 @@ def solution_implementation(solution_steps, deployment_name, namespace, pod_name
             diagnose_and_fix_pod(deployment_name, namespace, patch_body)
 
         elif action == "increase_node_resources":
-            print("⚠️ Considering increasing node resources (CPU/Memory). Adjusting settings as necessary.")
+            print("Considering increasing node resources (CPU/Memory). Adjusting settings as necessary.")
             # Add code to modify node resources here
 
         elif action == "check_network_connectivity":
-            print("⚠️ Check for network connectivity issues, especially if the container has issues pulling images or communicating with other services.")
+            print("Check for network connectivity issues, especially if the container has issues pulling images or communicating with other services.")
 
         elif action == "inspect_pod_events":
-            print("⚠️ Inspect Kubernetes events for the failing pods to gather more info.")
+            print("Inspect Kubernetes events for the failing pods to gather more info.")
             # Add code to inspect pod events here
 
         elif action == "check_liveness_readiness":
-            print("⚠️ Review and adjust liveness and readiness probes for better health checks.")
+            print("Review and adjust liveness and readiness probes for better health checks.")
             # Add code to inspect and modify probes here
 
         elif action == "rebuild_and_redeploy_image":
-            print("⚠️ Rebuilding and redeploying the container image.")
+            print("Rebuilding and redeploying the container image.")
             # Add code to rebuild and redeploy image here
 
         elif action == "rollback_changes":
-            print("⚠️ Rolling back to a previous version of the deployment.")
+            print("Rolling back to a previous version of the deployment.")
             # Add rollback logic here
 
         else:
-            print(f"⚠️ No predefined solution found for issue: {step}")
+            print(f" ")
 
