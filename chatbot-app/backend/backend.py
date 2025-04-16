@@ -27,6 +27,10 @@ def engineer_prompt(user_input):
         "- Restart the affected pod.\n"
     )
 
+@app.route('/')
+def index():
+    return 'Backend is up 🎉'
+
 @app.route("/k8s-chat", methods=["POST"])
 def k8s_chat():
     data = request.get_json()
