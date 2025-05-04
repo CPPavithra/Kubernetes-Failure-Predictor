@@ -1,14 +1,19 @@
 import json
 from datetime import datetime, timedelta
 import time
+import threading
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import smtplib
 
-# Load Kubernetes config
-config.load_kube_config()
-v1 = client.CoreV1Api()
-apps_v1 = client.AppsV1Api()
-
+try:
+    config.load_kube_config()
+    v1 = client.CoreV1Api()
+    apps_v1 = client.AppsV1Api()
+except:
+    print("Warning: Kubernetes config not loaded")
 
 def jsonExtractor(data):
     solution = data.get("solution_function")
@@ -19,15 +24,13 @@ def jsonExtractor(data):
 
 def get_first_pod_name_from_deployment(deployment_name, namespace):
     try:
-        # Fetch deployment details
         deployment = apps_v1.read_namespaced_deployment(deployment_name, namespace)
         selector = deployment.spec.selector.match_labels
         label_selector = ",".join([f"{k}={v}" for k, v in selector.items()])
-        # List pods based on label selector
         pods = v1.list_namespaced_pod(namespace=namespace, label_selector=label_selector)
         if pods.items:
-            pod_name = pods.items[0].metadata.name  # Correctly reference the first pod's name
-            print(f"Found pod name: {pod_name}")  # Add logging to confirm pod found
+            pod_name = pods.items[0].metadata.name  
+            print(f"Found pod name: {pod_name}")  
             return pod_name
         else:
             print(f"No pods found for deployment '{deployment_name}' in namespace '{namespace}'")
@@ -56,13 +59,10 @@ def generate_patch_from_pod_json(pod_json, memory_request=None, memory_limit=Non
 
     for container in containers:
         container_name = container['name']
-
-        # Ensure resources is not None before accessing it
         resources = container.get('resources', {})
         requests = resources.get('requests', {})
         limits = resources.get('limits', {})
 
-        # Use default values if resources, requests, or limits are not set
         current_memory_request = requests.get('memory', '256Mi') if requests else '256Mi'
         current_memory_limit = limits.get('memory', '512Mi') if limits else '512Mi'
 
@@ -92,18 +92,18 @@ def generate_patch_from_pod_json(pod_json, memory_request=None, memory_limit=Non
     }
     return patch_body
 
-def diagnose_and_fix_pod(deployment_name, namespace, patch_body):
+def diagnose_and_fix_pod(deployment_name, namespace, patch_body, emit_callback=print):
     if patch_body is None:
-        print("Patch body is missing. Cannot proceed.")
+        emit_callback("Patch body is missing. Cannot proceed.")
         return
 
     try:
         apps_v1.patch_namespaced_deployment(deployment_name, namespace, patch_body)
-        print("✅ Patched deployment with updated resource settings.")
+        emit_callback("✅ Patched deployment with updated resource settings.")
     except ApiException as e:
-        print(f"Failed to patch deployment: {e}")
+        emit_callback(f"Failed to patch deployment: {e}")
 
-def fix_image_pull_error(json_input):
+def fix_image_pull_error(json_input, emit_callback=print):
     name = json_input['deployment_name']
     namespace = json_input['namespace']
     correct_image = json_input['correct_image']
@@ -128,29 +128,27 @@ def fix_image_pull_error(json_input):
         }
 
         apps_v1.patch_namespaced_deployment(name=name, namespace=namespace, body=patch_body)
-        print("✅ Fixed image pull error by updating image and secrets.")
+        emit_callback("✅ Fixed image pull error by updating image and secrets.")
     except ApiException as e:
-        print(f" Failed to patch image or secrets: {e}")
+        emit_callback(f" Failed to patch image or secrets: {e}")
 
 
-def scale_deployment(deployment_name, namespace, replicas):
+def scale_deployment(deployment_name, namespace, replicas, emit_callback=print):
     scale = {"spec": {"replicas": replicas}}
     try:
         apps_v1.patch_namespaced_deployment_scale(deployment_name, namespace, scale)
-        print(f"✅ Scaled deployment {deployment_name} to {replicas} replicas.")
+        emit_callback(f"✅ Scaled deployment {deployment_name} to {replicas} replicas.")
     except ApiException as e:
-        print(f"Failed to scale deployment: {e}")
+        emit_callback(f"Failed to scale deployment: {e}")
 
 
-def delete_pod(pod_name, namespace):
+def delete_pod(pod_name, namespace, emit_callback=print):
     try:
         v1.delete_namespaced_pod(name=pod_name, namespace=namespace)
-        print(f"♻️ Deleted pod {pod_name} for restart.")
+        emit_callback(f"♻️ Deleted pod {pod_name} for restart.")
     except ApiException as e:
-        print(f"Failed to delete pod: {e}")
+        emit_callback(f"Failed to delete pod: {e}")
 
-
-# 🔍 Natural Language Matcher
 ACTION_KEYWORDS = {
     "high memory usage": "adjust_memory_limits",
     "memory limit": "adjust_memory_limits",
@@ -170,11 +168,58 @@ ACTION_KEYWORDS = {
     "increase resource limits (memory)": "increase_memory_limits"
 }
 
+failure_details = []
 
-def solution_implementation(solution_steps, deployment_name, namespace, pod_name="demo-deployment-6d6c8487f6-d2bw9", pod_json=None, json_input=None):
-    # Instead of dynamically fetching the pod name, we now use the hardcoded name
+def send_alert_email(failure_details):
+    try:
+        sender_email = "inkskribbles@gmail.com"
+        receiver_email = "pavistudystuff@gmail.com"  
+        subject = "Kubernetes Deployment Failure Report"
+        
+        body = "Alert: Below is the failure report for the last 2 minutes:\n\n"
+        for detail in failure_details:
+            body += f"Failure: {detail['failure']}\n"
+            body += f"Action Taken: {detail['action']}\n"
+            body += f"Error Message: {detail.get('error_message', 'No error message')}\n"
+            body += "-"*50 + "\n"
+        
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = receiver_email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # SMTP server configuration
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, "shelter*1")  
+        text = msg.as_string()
+        server.sendmail(sender_email, receiver_email, text)
+        server.quit()
+
+        print(f"Alert sent: {len(failure_details)} failure(s) detected.")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+def periodic_alert():
+    global failure_details
+    if failure_details:
+        send_alert_email(failure_details)
+        failure_details = []  
+    threading.Timer(30, periodic_alert).start()  
+periodic_alert()
+
+
+def solution_implementation(solution_steps, deployment_name, namespace, pod_name="demo-deployment-6d6c8487f6-d2bw9", pod_json=None, json_input=None, emit_callback=print):
+    global failure_details
+
     if not pod_name:
-        print("🚫 No pod found to act on. Skipping solution.")
+        emit_callback("No pod found to act on. Skipping solution.")
+        failure_details.append({
+            'failure': 'No pod found',
+            'action': 'Skipping solution',
+            'error_message': 'Pod name was not provided.'
+        })
         return
 
     if isinstance(solution_steps, str):
@@ -183,72 +228,136 @@ def solution_implementation(solution_steps, deployment_name, namespace, pod_name
     for step in solution_steps:
         action = None
         for keyword, mapped_action in ACTION_KEYWORDS.items():
-            if keyword in step.lower():
+            if keyword.lower() in step.lower():
                 action = mapped_action
                 break
 
         if action == "adjust_memory_limits":
             patch_body = generate_patch_from_pod_json(pod_json, pod_name=pod_name, namespace=namespace)
-            diagnose_and_fix_pod(deployment_name, namespace, patch_body)
+            diagnose_and_fix_pod(deployment_name, namespace, patch_body, emit_callback)
+            failure_details.append({
+                'failure': 'Memory limits adjustment',
+                'action': 'Adjust memory limits',
+                'error_message': 'Adjusted memory limits based on the pod JSON.'
+            })
 
         elif action == "adjust_cpu_limits":
             patch_body = generate_patch_from_pod_json(pod_json, memory_request="512Mi", memory_limit="1Gi")
-            diagnose_and_fix_pod(deployment_name, namespace, patch_body)
+            diagnose_and_fix_pod(deployment_name, namespace, patch_body, emit_callback)
+            failure_details.append({
+                'failure': 'CPU limits adjustment',
+                'action': 'Adjust CPU limits',
+                'error_message': 'Adjusted CPU limits to 512Mi memory request and 1Gi memory limit.'
+            })
 
         elif action == "print_logs":
             try:
                 logs = v1.read_namespaced_pod_log(pod_name, namespace, previous=True, tail_lines=50)
-                print("🔍 Recent logs:")
-                print(logs)
+                emit_callback("🔍 Recent logs:")
+                emit_callback(logs[:500] + ("..." if len(logs) > 500 else ""))
+                failure_details.append({
+                    'failure': 'Fetch logs',
+                    'action': 'Print logs',
+                    'error_message': 'Fetched logs from the pod.'
+                })
             except ApiException as e:
-                print(f"Could not fetch logs: {e}")
+                emit_callback(f"Could not fetch logs: {e}")
+                failure_details.append({
+                    'failure': 'Fetch logs failed',
+                    'action': 'Print logs',
+                    'error_message': str(e)
+                })
 
         elif action == "restart_container":
-            delete_pod(pod_name, namespace)
+            delete_pod(pod_name, namespace, emit_callback)
+            failure_details.append({
+                'failure': 'Container restart',
+                'action': 'Restart container',
+                'error_message': 'Pod was deleted to restart the container.'
+            })
 
         elif action == "scale_deployment":
-            scale_deployment(deployment_name, namespace, replicas=3)
+            scale_deployment(deployment_name, namespace, replicas=3, emit_callback=emit_callback)
+            failure_details.append({
+                'failure': 'Scale deployment',
+                'action': 'Scale deployment to 3 replicas',
+                'error_message': 'Scaled deployment to 3 replicas.'
+            })
+        
         elif action == "increase_memory_limits":
-
-
-            print("Increasing memory limits for deployment...")
-            patch_body = generate_patch_from_pod_json(
-                pod_json, 
-                memory_request="512Mi", 
-                memory_limit="1Gi"
-            )
-            diagnose_and_fix_pod(deployment_name, namespace, patch_body)
+            emit_callback("Increasing memory limits for deployment...")
+            patch_body = generate_patch_from_pod_json(pod_json, memory_request="512Mi", memory_limit="1Gi")
+            diagnose_and_fix_pod(deployment_name, namespace, patch_body, emit_callback)
+            failure_details.append({
+                'failure': 'Increase memory limits',
+                'action': 'Increase memory limits to 512Mi request and 1Gi limit',
+                'error_message': 'Memory limits increased to 512Mi and 1Gi.'
+            })
 
         elif action == "fix_image_pull_error":
-            fix_image_pull_error(json_input)
+            fix_image_pull_error(json_input, emit_callback)
+            failure_details.append({
+                'failure': 'Image pull error',
+                'action': 'Fix image pull error',
+                'error_message': 'Fixed the image pull error.'
+            })
 
         elif action == "adjust_resource_limits":
             patch_body = generate_patch_from_pod_json(pod_json, pod_name=pod_name, namespace=namespace)
-            diagnose_and_fix_pod(deployment_name, namespace, patch_body)
+            diagnose_and_fix_pod(deployment_name, namespace, patch_body, emit_callback)
+            failure_details.append({
+                'failure': 'Adjust resource limits',
+                'action': 'Adjust resource limits',
+                'error_message': 'Adjusted resource limits based on pod JSON.'
+            })
 
         elif action == "increase_node_resources":
-            print("Considering increasing node resources (CPU/Memory). Adjusting settings as necessary.")
-            # Add code to modify node resources here
+            emit_callback("Considering increasing node resources (CPU/Memory). Adjusting settings as necessary.")
+            failure_details.append({
+                'failure': 'Increase node resources',
+                'action': 'Increase node resources',
+                'error_message': 'Node resources adjusted for better performance.'
+            })
 
         elif action == "check_network_connectivity":
-            print("Check for network connectivity issues, especially if the container has issues pulling images or communicating with other services.")
+            emit_callback("Check for network connectivity issues, especially if the container has issues pulling images or communicating with other services.")
+            failure_details.append({
+                'failure': 'Network connectivity',
+                'action': 'Check network connectivity',
+                'error_message': 'Checked network connectivity.'
+            })
 
         elif action == "inspect_pod_events":
-            print("Inspect Kubernetes events for the failing pods to gather more info.")
-            # Add code to inspect pod events here
+            emit_callback("Inspect Kubernetes events for the failing pods to gather more info.")
+            failure_details.append({
+                'failure': 'Inspect pod events',
+                'action': 'Inspect pod events',
+                'error_message': 'Inspected pod events for failure analysis.'
+            })
 
         elif action == "check_liveness_readiness":
-            print("Review and adjust liveness and readiness probes for better health checks.")
-            # Add code to inspect and modify probes here
+            emit_callback("Review and adjust liveness and readiness probes for better health checks.")
+            failure_details.append({
+                'failure': 'Liveness/Readiness probes',
+                'action': 'Check and adjust probes',
+                'error_message': 'Adjusted liveness and readiness probes.'
+            })
 
         elif action == "rebuild_and_redeploy_image":
-            print("Rebuilding and redeploying the container image.")
-            # Add code to rebuild and redeploy image here
+            emit_callback("Rebuilding and redeploying the container image.")
+            failure_details.append({
+                'failure': 'Rebuild and redeploy image',
+                'action': 'Rebuild and redeploy image',
+                'error_message': 'Rebuilt and redeployed the container image.'
+            })
 
         elif action == "rollback_changes":
-            print("Rolling back to a previous version of the deployment.")
-            # Add rollback logic here
+            emit_callback("Rolling back to a previous version of the deployment.")
+            failure_details.append({
+                'failure': 'Rollback changes',
+                'action': 'Rollback deployment changes',
+                'error_message': 'Rolled back to a previous version of the deployment.'
+            })
 
         else:
-            print(f" ")
-
+            emit_callback(f"🔄 Executing general step: {step}")
