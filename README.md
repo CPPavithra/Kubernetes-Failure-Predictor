@@ -9,6 +9,31 @@
 [!]https://docs.google.com/presentation/d/1fE-f3UlMdvPvwsPu7tjNVFxIesq9U5uNW-DJhCRIQb4/edit?usp=sharing
 [!]
 
+# LATEST UPDATE!!!!!!!!!
+FOR THE FRONTEND OF GEMINI LOGGING, A USER CAN SEE IT BEAUTIFULLY WITH A WELL
+UI. To know more, see below- 
+To run the backend for the gemini remediation and advice setup
+```bash
+python3 src/server.py
+```
+
+To run the frontend
+```bash
+cd frontend/k8s-remediation-dashboard/src
+```
+```bash
+npm run dev
+```
+
+See below for the screenshots-
+![Image](https://github.com/user-attachments/assets/19a70204-43ba-4817-b987-b6b35c7e373f)
+
+![Image](https://github.com/user-attachments/assets/ef44afe6-53bd-4f95-858c-f2a2ce6742c9)
+
+![Image](https://github.com/user-attachments/assets/f337ae1f-d779-47cd-9f81-d9a3b96f0f86)
+Downloadable-
+![Image](https://github.com/user-attachments/assets/8c1888d4-c472-40c6-baa5-1f02c6ee3202)
+
 
 (PLEASE NOTE- The data is being scraped from prometheus EVERY 5 MINUTES. Model will be best trained with time.)
 
@@ -72,10 +97,6 @@ kubernetes-failure-prediction/
 │   ├── feature_engineering.py   # Script for feature engineering
 │   ├── jsonextractor.py         # Extracts JSON data for processing
 │   ├── test_model.py            # Tests for evaluating model performance
-│   ├── test_model.py            # Tests for evaluating model performance
-│   ├── failure_predictor.pkl     # Final trained model for failure prediction
-├── data/                         # Test data or external links to datasets
-│   ├── test_data.csv             # Example dataset used for testing
 │   └── external_data_link.txt    # External link to large datasets
 ├── docs/                         # Documentation files
 │   └── README.md                 # This file
@@ -189,6 +210,10 @@ pytest tests/
 This will run all the unit and integration tests to ensure the code is working as expected.
 
 ## Licenses
+This will run all the unit and integration tests to ensure the code is working as expected.
+
+This will run all the unit and integration tests to ensure the code is working as expected.
+
 This will run all the unit and integration tests to ensure the code is working as expected.
 
 ## Licenses
