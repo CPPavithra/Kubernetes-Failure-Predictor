@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 
-// Set up socket connection - update URL if backend is hosted elsewhere
+//updattte this when hosting it
 const socket = io("http://localhost:5000");
 
 function App() {
@@ -16,20 +16,17 @@ function App() {
   const [currentMetrics, setCurrentMetrics] = useState(null);
   const [remediationSteps, setRemediationSteps] = useState([]);
   const [currentSample, setCurrentSample] = useState(null);
-  
   const logsEndRef = useRef(null);
 
-  // Auto-scroll to bottom of logs
+  //autoscroll
   const scrollToBottom = () => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
   useEffect(() => {
     scrollToBottom();
   }, [logs]);
 
   useEffect(() => {
-    // Set up socket event listeners
     socket.on("connect", () => {
       console.log("Connected to server");
       setIsConnected(true);
@@ -39,7 +36,7 @@ function App() {
     socket.on("disconnect", () => {
       console.log("Disconnected from server");
       setIsConnected(false);
-      setLogs(prev => [...prev, "❌ Disconnected from backend server"]);
+      setLogs(prev => [...prev, "❌ Disconnected from backend server"]);//included the emoji to differentiate
     });
 
     socket.on("log", (data) => {
