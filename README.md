@@ -231,5 +231,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 Feel free to contribute to the project or suggest improvements via issues and pull requests. Happy coding!
 
 ```
-
-Let me know if you need any adjustments!
